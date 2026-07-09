@@ -1,7 +1,7 @@
 import 'reflect-metadata'
 import * as dotenv from 'dotenv'
 import * as bcrypt from 'bcrypt'
-import { Provinces, Districts, Sectors } from 'rwanda'
+import { Provinces, Districts } from 'rwanda'
 import { AppDataSource } from '../data-source'
 import { Location, LocationType } from '@/modules/locations/entities/location.entity'
 import { Category } from '@/modules/categories/entities/category.entity'
@@ -14,6 +14,14 @@ import { UserRole } from '@/common/enums/user-role.enum'
 import { RWANDA_PROVINCES_WITH_DISTRICTS } from './rwanda-provinces-districts'
 
 dotenv.config()
+
+const PROVINCE_DISPLAY_NAME: Record<string, string> = {
+  east: 'Eastern Province',
+  kigali: 'Kigali City',
+  north: 'Northern Province',
+  south: 'Southern Province',
+  west: 'Western Province',
+}
 
 const PRODUCT_DEFS: Array<{
   name: string
@@ -184,9 +192,32 @@ function normalize(value: string): string {
   return value.toLowerCase().replace(/\s+/g, ' ').trim()
 }
 
+async function ensureLocation(
+  repo: ReturnType<typeof AppDataSource.getRepository<Location>>,
+  name: string,
+  type: LocationType,
+  parent: Location | null,
+): Promise<Location> {
+  const existing = await repo.findOne({
+    where: { name, type, parentId: parent?.id ?? undefined },
+  })
+  if (existing) return existing
+
+  const location = repo.create({
+    name,
+    type,
+    parentId: parent?.id ?? null,
+    ancestorIds: parent ? [...parent.ancestorIds, parent.id] : [],
+  })
+  await repo.save(location)
+  console.log(`  Created location: ${name} (${type})`)
+  return location
+}
+
 async function run() {
-  const provinces = Provinces()
-  console.log('Using rwanda package — Provinces:', provinces.join(', '))
+  const rwandaProvinces = Provinces()
+  const rwandaDistricts = Districts() ?? []
+  console.log('Using rwanda package —', rwandaProvinces.length, 'provinces,', rwandaDistricts.length, 'districts available')
 
   await AppDataSource.initialize()
   const locationRepo = AppDataSource.getRepository(Location)
@@ -221,21 +252,16 @@ async function run() {
   const categoryByName = new Map(categories.map((c) => [normalize(c.name), c]))
   const unitBySlug = new Map(units.map((u) => [normalize(u.slug), u]))
 
-  const allDistricts = await locationRepo.find({
-    where: { type: LocationType.DISTRICT },
-    relations: { parent: true },
-  })
-
-  const provinceDistrictsLower = new Map<string, Map<string, Location>>()
+  const provinceMap = new Map<string, Map<string, Location>>()
   for (const [provinceName, districtNames] of Object.entries(RWANDA_PROVINCES_WITH_DISTRICTS)) {
+    const province = await ensureLocation(locationRepo, provinceName, LocationType.PROVINCE, null)
+
     const districtMap = new Map<string, Location>()
-    for (const dName of districtNames) {
-      const match = allDistricts.find(
-        (d) => normalize(d.name) === normalize(dName) && d.parent && normalize(d.parent.name) === normalize(provinceName)
-      )
-      if (match) districtMap.set(normalize(dName), match)
+    for (const districtName of districtNames) {
+      const district = await ensureLocation(locationRepo, districtName, LocationType.DISTRICT, province)
+      districtMap.set(normalize(districtName), district)
     }
-    provinceDistrictsLower.set(normalize(provinceName), districtMap)
+    provinceMap.set(normalize(provinceName), districtMap)
   }
 
   let productCount = 0
@@ -269,7 +295,7 @@ async function run() {
     }
 
     for (const listingDef of def.listings) {
-      const districtMap = provinceDistrictsLower.get(normalize(listingDef.province))
+      const districtMap = provinceMap.get(normalize(listingDef.province))
       if (!districtMap) {
         console.warn(`Province "${listingDef.province}" not found — skipping listing for ${listingDef.district}`)
         continue
