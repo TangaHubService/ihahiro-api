@@ -2,6 +2,7 @@ import 'reflect-metadata'
 import { ValidationPipe } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { NestFactory } from '@nestjs/core'
+import * as compression from 'compression'
 import * as fs from 'fs'
 import { AppModule } from './app.module'
 
@@ -11,6 +12,8 @@ async function bootstrap() {
 
   const mediaDir = configService.get<string>('MEDIA_LOCAL_DIR', 'uploads')
   fs.mkdirSync(mediaDir, { recursive: true })
+
+  app.use(compression())
 
   app.enableCors({ origin: configService.get<string>('WEB_APP_ORIGIN', 'http://localhost:3000') })
 

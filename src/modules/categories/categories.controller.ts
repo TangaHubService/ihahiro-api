@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post } from '@nestjs/common'
+import { Body, Controller, Get, Header, Post } from '@nestjs/common'
 import { CurrentUser } from '@/common/decorators/current-user.decorator'
 import { Public } from '@/common/decorators/public.decorator'
 import type { AuthenticatedUser } from '@/modules/auth/types/authenticated-user'
@@ -9,8 +9,10 @@ import { CreateCategoryDto } from './dto/create-category.dto'
 export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
 
+  // Approved categories change rarely (admin/moderator action) — safe to cache briefly.
   @Public()
   @Get()
+  @Header('Cache-Control', 'public, max-age=300')
   findActive() {
     return this.categoriesService.findActive()
   }
