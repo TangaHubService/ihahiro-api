@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "nest build && tsc-alias -p tsconfig.build.json",
-    "start": "node dist/main",
+    "start": "node -r ./crypto-polyfill.js dist/main",
     "start:dev": "ts-node-dev -r tsconfig-paths/register --respawn --transpile-only src/main.ts",
     "start:debug": "ts-node-dev -r tsconfig-paths/register --respawn --inspect src/main.ts",
     "lint": "eslint \"{src,test}/**/*.ts\"",
