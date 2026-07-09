@@ -8,7 +8,7 @@
     "start:dev": "ts-node-dev -r tsconfig-paths/register --respawn --transpile-only src/main.ts",
     "start:debug": "ts-node-dev -r tsconfig-paths/register --respawn --inspect src/main.ts",
     "lint": "eslint \"{src,test}/**/*.ts\"",
-    "typeorm": "tsx ./node_modules/typeorm/cli.js -d src/database2/data-source.ts",
+    "typeorm": "ts-node -r tsconfig-paths/register -r reflect-metadata ./node_modules/typeorm/cli.js -d src/database2/data-source.ts",
     "migration:generate": "npm run typeorm -- migration:generate",
     "migration:run": "npm run typeorm -- migration:run",
     "migration:revert": "npm run typeorm -- migration:revert",
