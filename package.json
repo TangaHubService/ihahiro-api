@@ -13,7 +13,8 @@
     "migration:run": "npm run typeorm -- migration:run",
     "migration:revert": "npm run typeorm -- migration:revert",
     "seed:admin": "ts-node -r tsconfig-paths/register src/database2/seeds/seed-admin.ts",
-    "seed:products": "ts-node -r tsconfig-paths/register src/database2/seeds/seed-products.ts"
+    "seed:products": "ts-node -r tsconfig-paths/register src/database2/seeds/seed-products.ts",
+    "seed:fresh": "ts-node -r tsconfig-paths/register src/database2/seeds/seed-fresh.ts && npm run seed:products"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1083.0",
