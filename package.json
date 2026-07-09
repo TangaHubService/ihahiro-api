@@ -15,7 +15,8 @@
     "seed:locations": "ts-node -r tsconfig-paths/register src/database2/seeds/seed-locations.ts",
     "seed:sub-locations": "ts-node -r tsconfig-paths/register src/database2/seeds/import-sub-locations.ts",
     "seed:catalog": "ts-node -r tsconfig-paths/register src/database2/seeds/seed-catalog.ts",
-    "seed:admin": "ts-node -r tsconfig-paths/register src/database2/seeds/seed-admin.ts"
+    "seed:admin": "ts-node -r tsconfig-paths/register src/database2/seeds/seed-admin.ts",
+    "seed:products": "ts-node -r tsconfig-paths/register src/database2/seeds/seed-products.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1083.0",
@@ -39,6 +40,7 @@
     "passport-jwt": "^4.0.1",
     "pg": "^8.13.1",
     "reflect-metadata": "^0.2.2",
+    "rwanda": "^3.0.0",
     "rxjs": "^7.8.1",
     "typeorm": "^1.0.0",
     "uuid": "^11.0.5"
