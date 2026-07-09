@@ -1,0 +1,122 @@
+import { MigrationInterface, QueryRunner } from "typeorm";
+
+export class InitialSchema1783540522494 implements MigrationInterface {
+    name = 'InitialSchema1783540522494'
+
+    public async up(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(`CREATE TYPE "public"."locations_type_enum" AS ENUM('province', 'district', 'sector', 'cell', 'village')`);
+        await queryRunner.query(`CREATE TABLE "locations" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "name" character varying NOT NULL, "type" "public"."locations_type_enum" NOT NULL, "parentId" uuid, "ancestorIds" uuid array NOT NULL DEFAULT '{}', "latitude" double precision, "longitude" double precision, CONSTRAINT "PK_7cc1c9e3853b94816c094825e74" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE INDEX "IDX_afeaab4b942bcd1a2e5ca1b6a3" ON "locations"  ("type", "parentId") `);
+        await queryRunner.query(`CREATE TYPE "public"."users_role_enum" AS ENUM('user', 'moderator', 'admin')`);
+        await queryRunner.query(`CREATE TABLE "users" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "email" character varying NOT NULL, "passwordHash" character varying NOT NULL, "firstName" character varying NOT NULL, "lastName" character varying NOT NULL, "phone" character varying, "whatsapp" character varying, "isBuyer" boolean NOT NULL DEFAULT true, "isSeller" boolean NOT NULL DEFAULT false, "role" "public"."users_role_enum" NOT NULL DEFAULT 'user', "avatarUrl" character varying, "locationId" uuid, "isVerified" boolean NOT NULL DEFAULT false, "isActive" boolean NOT NULL DEFAULT true, CONSTRAINT "PK_a3ffb1c0c8416b9fc6f907b7433" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE UNIQUE INDEX "IDX_97672ac88f789774dd47f7c8be" ON "users"  ("email") `);
+        await queryRunner.query(`CREATE UNIQUE INDEX "IDX_ff1c0e6a4865132a5f7f028d2d" ON "users"  ("phone") WHERE phone IS NOT NULL`);
+        await queryRunner.query(`CREATE TABLE "refresh_tokens" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "userId" uuid NOT NULL, "tokenHash" character varying NOT NULL, "expiresAt" TIMESTAMP WITH TIME ZONE NOT NULL, "revokedAt" TIMESTAMP WITH TIME ZONE, CONSTRAINT "PK_7d8bee0204106019488c4c50ffa" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE UNIQUE INDEX "IDX_c25bc63d248ca90e8dcc1d92d0" ON "refresh_tokens"  ("tokenHash") `);
+        await queryRunner.query(`CREATE TABLE "categories" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "name" character varying NOT NULL, "description" text, "parentId" uuid, "imageUrl" character varying, "isActive" boolean NOT NULL DEFAULT true, "createdById" uuid, CONSTRAINT "PK_24dbc6126a28ff948da33e97d3b" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TABLE "units" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "name" character varying NOT NULL, "slug" character varying NOT NULL, "shortName" character varying, CONSTRAINT "PK_5a8f2f064919b587d93936cb223" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE UNIQUE INDEX "IDX_09b412b8cb825129ad8d68b950" ON "units"  ("slug") `);
+        await queryRunner.query(`CREATE TABLE "products" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "name" character varying NOT NULL, "description" text, "categoryId" uuid NOT NULL, "unitId" uuid, "isActive" boolean NOT NULL DEFAULT true, "createdById" uuid, CONSTRAINT "PK_0806c755e0aca124e67c0cf6d7d" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TYPE "public"."listing_media_type_enum" AS ENUM('image', 'video')`);
+        await queryRunner.query(`CREATE TABLE "listing_media" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "listingId" uuid NOT NULL, "url" character varying NOT NULL, "type" "public"."listing_media_type_enum" NOT NULL DEFAULT 'image', "order" integer NOT NULL DEFAULT '0', CONSTRAINT "PK_95a44b7c28e30592adad8b85e51" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TYPE "public"."listings_status_enum" AS ENUM('DRAFT', 'PENDING_REVIEW', 'PUBLISHED', 'REJECTED', 'ARCHIVED')`);
+        await queryRunner.query(`CREATE TABLE "listings" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "sellerId" uuid NOT NULL, "productId" uuid NOT NULL, "unitId" uuid NOT NULL, "locationId" uuid, "title" character varying NOT NULL, "description" text NOT NULL, "price" numeric(12,2) NOT NULL, "quantity" numeric(12,2) NOT NULL, "status" "public"."listings_status_enum" NOT NULL DEFAULT 'DRAFT', "contactPhone" character varying, "contactWhatsapp" character varying, "qualityGrade" character varying, "deliveryNote" text, "viewCount" integer NOT NULL DEFAULT '0', "publishedAt" TIMESTAMP WITH TIME ZONE, "rejectionReason" text, CONSTRAINT "PK_520ecac6c99ec90bcf5a603cdcb" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE INDEX "IDX_3fd9451d7c869ef1e4338ffacc" ON "listings"  ("status", "createdAt") `);
+        await queryRunner.query(`CREATE TABLE "chat_threads" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "listingId" uuid, "buyerId" uuid NOT NULL, "sellerId" uuid NOT NULL, "lastMessageAt" TIMESTAMP WITH TIME ZONE, CONSTRAINT "PK_973a81c0adb9b18a5ea3ef95bf8" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TABLE "chat_messages" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "threadId" uuid NOT NULL, "senderId" uuid NOT NULL, "body" text NOT NULL, "readAt" TIMESTAMP WITH TIME ZONE, CONSTRAINT "PK_40c55ee0e571e268b0d3cd37d10" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE INDEX "IDX_8eb77cfff43fb06e16c7dda852" ON "chat_messages"  ("threadId", "createdAt") `);
+        await queryRunner.query(`CREATE TABLE "favorites" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "userId" uuid NOT NULL, "listingId" uuid NOT NULL, CONSTRAINT "PK_890818d27523748dd36a4d1bdc8" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE UNIQUE INDEX "IDX_d444e30d3b67e3dcfdd47402fe" ON "favorites"  ("userId", "listingId") `);
+        await queryRunner.query(`CREATE TYPE "public"."notifications_type_enum" AS ENUM('LISTING_APPROVED', 'LISTING_REJECTED', 'LISTING_REPORTED', 'NEW_REVIEW')`);
+        await queryRunner.query(`CREATE TABLE "notifications" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "userId" uuid NOT NULL, "type" "public"."notifications_type_enum" NOT NULL, "title" character varying NOT NULL, "body" text NOT NULL, "isRead" boolean NOT NULL DEFAULT false, "relatedEntityId" uuid, CONSTRAINT "PK_6a72c3c0f683f6462415e653c3a" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE INDEX "IDX_5340fc241f57310d243e5ab20b" ON "notifications"  ("userId", "isRead") `);
+        await queryRunner.query(`CREATE TYPE "public"."reports_reason_enum" AS ENUM('SCAM', 'DUPLICATE', 'INAPPROPRIATE', 'WRONG_INFO', 'OTHER')`);
+        await queryRunner.query(`CREATE TYPE "public"."reports_status_enum" AS ENUM('PENDING', 'REVIEWED', 'DISMISSED', 'ACTION_TAKEN')`);
+        await queryRunner.query(`CREATE TABLE "reports" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "reporterId" uuid NOT NULL, "listingId" uuid NOT NULL, "reason" "public"."reports_reason_enum" NOT NULL, "message" text, "status" "public"."reports_status_enum" NOT NULL DEFAULT 'PENDING', "resolvedById" uuid, "resolvedAt" TIMESTAMP WITH TIME ZONE, CONSTRAINT "PK_d9013193989303580053c0b5ef6" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TABLE "reviews" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "reviewerId" uuid NOT NULL, "targetUserId" uuid NOT NULL, "listingId" uuid, "rating" smallint NOT NULL, "comment" text, CONSTRAINT "PK_231ae565c273ee700b283f15c1d" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE UNIQUE INDEX "IDX_f902bd48aacffa55bb524aeadf" ON "reviews"  ("reviewerId", "targetUserId", "listingId") `);
+        await queryRunner.query(`CREATE TABLE "saved_searches" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "userId" uuid NOT NULL, "name" character varying, "filters" jsonb NOT NULL, CONSTRAINT "PK_d9a53c71ccc5cf66dcdc5b33dfe" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`ALTER TABLE "locations" ADD CONSTRAINT "FK_9f238930bae84c7eafad3785d7b" FOREIGN KEY ("parentId") REFERENCES "locations"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "users" ADD CONSTRAINT "FK_49acb911ee20b02f86ec532a122" FOREIGN KEY ("locationId") REFERENCES "locations"("id") ON DELETE SET NULL ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "refresh_tokens" ADD CONSTRAINT "FK_610102b60fea1455310ccd299de" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "categories" ADD CONSTRAINT "FK_9a6f051e66982b5f0318981bcaa" FOREIGN KEY ("parentId") REFERENCES "categories"("id") ON DELETE SET NULL ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "products" ADD CONSTRAINT "FK_ff56834e735fa78a15d0cf21926" FOREIGN KEY ("categoryId") REFERENCES "categories"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "products" ADD CONSTRAINT "FK_c65251602de2a10b9c6e1af8511" FOREIGN KEY ("unitId") REFERENCES "units"("id") ON DELETE SET NULL ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "listing_media" ADD CONSTRAINT "FK_6d33684e28267a4747d248b161b" FOREIGN KEY ("listingId") REFERENCES "listings"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "listings" ADD CONSTRAINT "FK_c98f5cd679fefeebac9ca98c7a5" FOREIGN KEY ("sellerId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "listings" ADD CONSTRAINT "FK_5399d65e9272d938d18a54d3e1d" FOREIGN KEY ("productId") REFERENCES "products"("id") ON DELETE RESTRICT ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "listings" ADD CONSTRAINT "FK_b333ab8cc7a3de9aa771122847f" FOREIGN KEY ("unitId") REFERENCES "units"("id") ON DELETE RESTRICT ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "listings" ADD CONSTRAINT "FK_203baba20ef2920e1ad52c04802" FOREIGN KEY ("locationId") REFERENCES "locations"("id") ON DELETE SET NULL ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "chat_threads" ADD CONSTRAINT "FK_56e24a1df55dc284f40d67087d2" FOREIGN KEY ("listingId") REFERENCES "listings"("id") ON DELETE SET NULL ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "chat_threads" ADD CONSTRAINT "FK_55ed3d48e6229e7cab1467266cb" FOREIGN KEY ("buyerId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "chat_threads" ADD CONSTRAINT "FK_5eb2fd293bc0c921896b42562d8" FOREIGN KEY ("sellerId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "chat_messages" ADD CONSTRAINT "FK_b2ac4c23281c85c64f16ff0548e" FOREIGN KEY ("threadId") REFERENCES "chat_threads"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "chat_messages" ADD CONSTRAINT "FK_fc6b58e41e9a871dacbe9077def" FOREIGN KEY ("senderId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "favorites" ADD CONSTRAINT "FK_e747534006c6e3c2f09939da60f" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "favorites" ADD CONSTRAINT "FK_db8f180969a365cfca29b2f9896" FOREIGN KEY ("listingId") REFERENCES "listings"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "reports" ADD CONSTRAINT "FK_4353be8309ce86650def2f8572d" FOREIGN KEY ("reporterId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "reports" ADD CONSTRAINT "FK_a10deac46782374ec9f01b8901f" FOREIGN KEY ("listingId") REFERENCES "listings"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "reviews" ADD CONSTRAINT "FK_f9238c3e3739dc40322f577fc46" FOREIGN KEY ("reviewerId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "reviews" ADD CONSTRAINT "FK_299e0ce9838de08dea4eac93e28" FOREIGN KEY ("targetUserId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "reviews" ADD CONSTRAINT "FK_c6edb78b90787a7a91b276884ef" FOREIGN KEY ("listingId") REFERENCES "listings"("id") ON DELETE SET NULL ON UPDATE NO ACTION`);
+    }
+
+    public async down(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(`ALTER TABLE "reviews" DROP CONSTRAINT "FK_c6edb78b90787a7a91b276884ef"`);
+        await queryRunner.query(`ALTER TABLE "reviews" DROP CONSTRAINT "FK_299e0ce9838de08dea4eac93e28"`);
+        await queryRunner.query(`ALTER TABLE "reviews" DROP CONSTRAINT "FK_f9238c3e3739dc40322f577fc46"`);
+        await queryRunner.query(`ALTER TABLE "reports" DROP CONSTRAINT "FK_a10deac46782374ec9f01b8901f"`);
+        await queryRunner.query(`ALTER TABLE "reports" DROP CONSTRAINT "FK_4353be8309ce86650def2f8572d"`);
+        await queryRunner.query(`ALTER TABLE "favorites" DROP CONSTRAINT "FK_db8f180969a365cfca29b2f9896"`);
+        await queryRunner.query(`ALTER TABLE "favorites" DROP CONSTRAINT "FK_e747534006c6e3c2f09939da60f"`);
+        await queryRunner.query(`ALTER TABLE "chat_messages" DROP CONSTRAINT "FK_fc6b58e41e9a871dacbe9077def"`);
+        await queryRunner.query(`ALTER TABLE "chat_messages" DROP CONSTRAINT "FK_b2ac4c23281c85c64f16ff0548e"`);
+        await queryRunner.query(`ALTER TABLE "chat_threads" DROP CONSTRAINT "FK_5eb2fd293bc0c921896b42562d8"`);
+        await queryRunner.query(`ALTER TABLE "chat_threads" DROP CONSTRAINT "FK_55ed3d48e6229e7cab1467266cb"`);
+        await queryRunner.query(`ALTER TABLE "chat_threads" DROP CONSTRAINT "FK_56e24a1df55dc284f40d67087d2"`);
+        await queryRunner.query(`ALTER TABLE "listings" DROP CONSTRAINT "FK_203baba20ef2920e1ad52c04802"`);
+        await queryRunner.query(`ALTER TABLE "listings" DROP CONSTRAINT "FK_b333ab8cc7a3de9aa771122847f"`);
+        await queryRunner.query(`ALTER TABLE "listings" DROP CONSTRAINT "FK_5399d65e9272d938d18a54d3e1d"`);
+        await queryRunner.query(`ALTER TABLE "listings" DROP CONSTRAINT "FK_c98f5cd679fefeebac9ca98c7a5"`);
+        await queryRunner.query(`ALTER TABLE "listing_media" DROP CONSTRAINT "FK_6d33684e28267a4747d248b161b"`);
+        await queryRunner.query(`ALTER TABLE "products" DROP CONSTRAINT "FK_c65251602de2a10b9c6e1af8511"`);
+        await queryRunner.query(`ALTER TABLE "products" DROP CONSTRAINT "FK_ff56834e735fa78a15d0cf21926"`);
+        await queryRunner.query(`ALTER TABLE "categories" DROP CONSTRAINT "FK_9a6f051e66982b5f0318981bcaa"`);
+        await queryRunner.query(`ALTER TABLE "refresh_tokens" DROP CONSTRAINT "FK_610102b60fea1455310ccd299de"`);
+        await queryRunner.query(`ALTER TABLE "users" DROP CONSTRAINT "FK_49acb911ee20b02f86ec532a122"`);
+        await queryRunner.query(`ALTER TABLE "locations" DROP CONSTRAINT "FK_9f238930bae84c7eafad3785d7b"`);
+        await queryRunner.query(`DROP TABLE "saved_searches"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_f902bd48aacffa55bb524aeadf"`);
+        await queryRunner.query(`DROP TABLE "reviews"`);
+        await queryRunner.query(`DROP TABLE "reports"`);
+        await queryRunner.query(`DROP TYPE "public"."reports_status_enum"`);
+        await queryRunner.query(`DROP TYPE "public"."reports_reason_enum"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_5340fc241f57310d243e5ab20b"`);
+        await queryRunner.query(`DROP TABLE "notifications"`);
+        await queryRunner.query(`DROP TYPE "public"."notifications_type_enum"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_d444e30d3b67e3dcfdd47402fe"`);
+        await queryRunner.query(`DROP TABLE "favorites"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_8eb77cfff43fb06e16c7dda852"`);
+        await queryRunner.query(`DROP TABLE "chat_messages"`);
+        await queryRunner.query(`DROP TABLE "chat_threads"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_3fd9451d7c869ef1e4338ffacc"`);
+        await queryRunner.query(`DROP TABLE "listings"`);
+        await queryRunner.query(`DROP TYPE "public"."listings_status_enum"`);
+        await queryRunner.query(`DROP TABLE "listing_media"`);
+        await queryRunner.query(`DROP TYPE "public"."listing_media_type_enum"`);
+        await queryRunner.query(`DROP TABLE "products"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_09b412b8cb825129ad8d68b950"`);
+        await queryRunner.query(`DROP TABLE "units"`);
+        await queryRunner.query(`DROP TABLE "categories"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_c25bc63d248ca90e8dcc1d92d0"`);
+        await queryRunner.query(`DROP TABLE "refresh_tokens"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_ff1c0e6a4865132a5f7f028d2d"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_97672ac88f789774dd47f7c8be"`);
+        await queryRunner.query(`DROP TABLE "users"`);
+        await queryRunner.query(`DROP TYPE "public"."users_role_enum"`);
+        await queryRunner.query(`DROP INDEX "public"."IDX_afeaab4b942bcd1a2e5ca1b6a3"`);
+        await queryRunner.query(`DROP TABLE "locations"`);
+        await queryRunner.query(`DROP TYPE "public"."locations_type_enum"`);
+    }
+
+}

@@ -70,6 +70,9 @@ web_modules/
 .env.*
 !.env.example
 
+# uploaded listing media (local disk storage - swap for S3/object storage in production)
+uploads/
+
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache
