@@ -221,6 +221,63 @@ async function run() {
   const listingRepo = AppDataSource.getRepository(Listing)
   const userRepo = AppDataSource.getRepository(User)
 
+  const CATEGORIES = ['Grains', 'Legumes', 'Vegetables', 'Fruits', 'Tubers', 'Other']
+  const UNITS: Array<{ name: string; slug: string; shortName: string }> = [
+    { name: 'Kilogram', slug: 'kg', shortName: 'Kg' },
+    { name: 'Bag', slug: 'bag', shortName: 'Bag' },
+    { name: 'Basket', slug: 'basket', shortName: 'Basket' },
+    { name: 'Litre', slug: 'litre', shortName: 'L' },
+    { name: 'Piece', slug: 'piece', shortName: 'Pc' },
+  ]
+  const CATALOG_PRODUCTS: Array<{ name: string; category: string }> = [
+    { name: 'Potatoes', category: 'Tubers' },
+    { name: 'Sweet Potatoes', category: 'Tubers' },
+    { name: 'Cassava', category: 'Tubers' },
+    { name: 'Carrots', category: 'Vegetables' },
+    { name: 'Onions', category: 'Vegetables' },
+    { name: 'Cabbage', category: 'Vegetables' },
+    { name: 'Beans', category: 'Legumes' },
+    { name: 'Maize', category: 'Grains' },
+    { name: 'Rice', category: 'Grains' },
+    { name: 'Bananas', category: 'Fruits' },
+    { name: 'Avocado', category: 'Fruits' },
+  ]
+
+  const categoryByName = new Map<string, Category>()
+  for (const name of CATEGORIES) {
+    let cat = await catRepo.findOne({ where: { name } })
+    if (!cat) {
+      cat = await catRepo.save(catRepo.create({ name, isActive: true }))
+      console.log(`Created category: ${name}`)
+    }
+    categoryByName.set(name, cat)
+  }
+
+  let kgUnit: Unit | null = null
+  for (const def of UNITS) {
+    let unit = await unitRepo.findOne({ where: { slug: def.slug } })
+    if (!unit) {
+      unit = await unitRepo.save(unitRepo.create(def))
+      console.log(`Created unit: ${def.name}`)
+    }
+    if (def.slug === 'kg') kgUnit = unit
+  }
+
+  for (const pd of CATALOG_PRODUCTS) {
+    const cat = categoryByName.get(pd.category)
+    if (!cat) continue
+    const existing = await prodRepo.findOne({ where: { name: pd.name } })
+    if (!existing) {
+      await prodRepo.save(prodRepo.create({
+        name: pd.name,
+        categoryId: cat.id,
+        unitId: kgUnit?.id ?? null,
+        isActive: true,
+      }))
+      console.log(`Created product: ${pd.name}`)
+    }
+  }
+
   let seller = await userRepo.findOne({ where: { email: 'seller@ihahiro.rw' } })
   if (!seller) {
     const passwordHash = await bcrypt.hash('seller123', 12)
@@ -241,10 +298,11 @@ async function run() {
     console.log('Created demo seller: seller@ihahiro.rw / seller123')
   }
 
-  const categories = await catRepo.find()
-  const units = await unitRepo.find()
-  const categoryByName = new Map(categories.map((c) => [normalize(c.name), c]))
-  const unitBySlug = new Map(units.map((u) => [normalize(u.slug), u]))
+  const unitBySlug = new Map<string, Unit>()
+  for (const u of UNITS) {
+    const unit = await unitRepo.findOne({ where: { slug: u.slug } })
+    if (unit) unitBySlug.set(normalize(u.slug), unit)
+  }
 
   const allDistricts = await locRepo.find({ where: { type: LocationType.DISTRICT }, relations: { parent: true } })
   const districtByProvinceAndName = new Map<string, Location>()

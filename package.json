@@ -12,9 +12,6 @@
     "migration:generate": "npm run typeorm -- migration:generate",
     "migration:run": "npm run typeorm -- migration:run",
     "migration:revert": "npm run typeorm -- migration:revert",
-    "seed:locations": "ts-node -r tsconfig-paths/register src/database2/seeds/seed-locations.ts",
-    "seed:sub-locations": "ts-node -r tsconfig-paths/register src/database2/seeds/import-sub-locations.ts",
-    "seed:catalog": "ts-node -r tsconfig-paths/register src/database2/seeds/seed-catalog.ts",
     "seed:admin": "ts-node -r tsconfig-paths/register src/database2/seeds/seed-admin.ts",
     "seed:products": "ts-node -r tsconfig-paths/register src/database2/seeds/seed-products.ts"
   },
@@ -33,7 +30,7 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
     "cloudinary": "^2.10.0",
-    "csv-parse": "^5.6.0",
+
     "dotenv": "^16.4.7",
     "multer": "^2.0.1",
     "passport": "^0.7.0",
