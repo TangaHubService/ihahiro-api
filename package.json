@@ -14,6 +14,7 @@
     "migration:revert": "npm run typeorm -- migration:revert",
     "seed:admin": "ts-node -r tsconfig-paths/register src/database2/seeds/seed-admin.ts",
     "seed:products": "ts-node -r tsconfig-paths/register src/database2/seeds/seed-products.ts",
+    "seed:demo": "ts-node -r tsconfig-paths/register src/database2/seeds/seed-demo.ts",
     "seed:fresh": "ts-node -r tsconfig-paths/register src/database2/seeds/seed-fresh.ts && npm run seed:products"
   },
   "dependencies": {
