@@ -5,17 +5,22 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { ExtractJwt, Strategy } from 'passport-jwt'
 import { Repository } from 'typeorm'
 import { User } from '@/modules/users/entities/user.entity'
+import { BlacklistedToken } from '@/modules/auth/entities/blacklisted-token.entity'
 import type { AuthenticatedUser } from '@/modules/auth/types/authenticated-user'
 
 interface JwtPayload {
   sub: string
+  jti: string
+  exp: number
 }
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     configService: ConfigService,
-    @InjectRepository(User) private readonly usersRepository: Repository<User>
+    @InjectRepository(User) private readonly usersRepository: Repository<User>,
+    @InjectRepository(BlacklistedToken)
+    private readonly blacklistedTokensRepository: Repository<BlacklistedToken>
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -25,10 +30,17 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload): Promise<AuthenticatedUser> {
-    const user = await this.usersRepository.findOne({ where: { id: payload.sub } })
+    const [user, blacklisted] = await Promise.all([
+      this.usersRepository.findOne({ where: { id: payload.sub } }),
+      this.blacklistedTokensRepository.findOne({ where: { jti: payload.jti } }),
+    ])
 
     if (!user || !user.isActive) {
       throw new UnauthorizedException('Session is no longer valid')
+    }
+
+    if (blacklisted) {
+      throw new UnauthorizedException('Session has been logged out')
     }
 
     return {
@@ -37,6 +49,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       role: user.role,
       isBuyer: user.isBuyer,
       isSeller: user.isSeller,
+      jti: payload.jti,
+      tokenExpiresAt: new Date(payload.exp * 1000),
     }
   }
 }

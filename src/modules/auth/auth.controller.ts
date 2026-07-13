@@ -34,7 +34,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Post('logout')
   logout(@CurrentUser() user: AuthenticatedUser) {
-    return this.authService.logout(user.id)
+    return this.authService.logout(user.id, user.jti, user.tokenExpiresAt)
   }
 
   @Get('me')

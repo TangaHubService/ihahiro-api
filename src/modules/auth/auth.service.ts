@@ -9,6 +9,7 @@ import { toJwtExpiry } from '@/common/utils/jwt-expiry'
 import { RegisterDto } from '@/modules/auth/dto/register.dto'
 import { LoginDto } from '@/modules/auth/dto/login.dto'
 import { RefreshToken } from '@/modules/auth/entities/refresh-token.entity'
+import { BlacklistedToken } from '@/modules/auth/entities/blacklisted-token.entity'
 import { User } from '@/modules/users/entities/user.entity'
 
 const BCRYPT_ROUNDS = 12
@@ -25,6 +26,8 @@ export class AuthService {
   constructor(
     @InjectRepository(User) private readonly usersRepository: Repository<User>,
     @InjectRepository(RefreshToken) private readonly refreshTokensRepository: Repository<RefreshToken>,
+    @InjectRepository(BlacklistedToken)
+    private readonly blacklistedTokensRepository: Repository<BlacklistedToken>,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService
   ) {}
@@ -90,8 +93,13 @@ export class AuthService {
     return this.issueTokenPair(stored.user)
   }
 
-  async logout(userId: string) {
-    await this.refreshTokensRepository.update({ userId, revokedAt: IsNull() }, { revokedAt: new Date() })
+  async logout(userId: string, jti: string, tokenExpiresAt: Date) {
+    await Promise.all([
+      this.refreshTokensRepository.update({ userId, revokedAt: IsNull() }, { revokedAt: new Date() }),
+      this.blacklistedTokensRepository.save(
+        this.blacklistedTokensRepository.create({ jti, expiresAt: tokenExpiresAt })
+      ),
+    ])
   }
 
   async me(userId: string) {
@@ -104,7 +112,7 @@ export class AuthService {
 
   private async issueTokenPair(user: User): Promise<TokenPair> {
     const accessToken = await this.jwtService.signAsync(
-      { sub: user.id },
+      { sub: user.id, jti: crypto.randomUUID() },
       {
         secret: this.configService.getOrThrow<string>('JWT_ACCESS_SECRET'),
         expiresIn: toJwtExpiry(this.configService.get<string>('JWT_ACCESS_EXPIRES_IN', '15m')),
