@@ -59,7 +59,7 @@ class EnvironmentVariables {
   @IsOptional()
   WEB_APP_ORIGIN = 'http://localhost:3000'
 
-  @IsIn(['local'])
+  @IsIn(['local', 'cloudinary'])
   @IsOptional()
   MEDIA_DRIVER = 'local'
 

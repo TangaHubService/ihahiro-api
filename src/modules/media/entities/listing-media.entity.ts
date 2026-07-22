@@ -19,6 +19,9 @@ export class ListingMedia extends BaseEntity {
   @Column()
   url!: string
 
+  @Column({ nullable: true })
+  fileId!: string | null
+
   @Column({ type: 'enum', enum: MediaType, default: MediaType.IMAGE })
   type!: MediaType
 

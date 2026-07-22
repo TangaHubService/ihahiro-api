@@ -31,12 +31,16 @@ import { SavedSearchesModule } from '@/modules/saved-searches/saved-searches.mod
     ServeStaticModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => [
-        {
-          rootPath: join(process.cwd(), config.get<string>('MEDIA_LOCAL_DIR', 'uploads')),
-          serveRoot: '/uploads',
-        },
-      ],
+      useFactory: (config: ConfigService) => {
+        const driver = config.get<string>('MEDIA_DRIVER', 'local')
+        if (driver !== 'local') return []
+        return [
+          {
+            rootPath: join(process.cwd(), config.get<string>('MEDIA_LOCAL_DIR', 'uploads')),
+            serveRoot: '/uploads',
+          },
+        ]
+      },
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],

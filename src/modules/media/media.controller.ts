@@ -9,13 +9,11 @@ import {
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common'
-import { ConfigService } from '@nestjs/config'
 import { FileInterceptor } from '@nestjs/platform-express'
-import { diskStorage } from 'multer'
-import { extname } from 'path'
-import { randomUUID } from 'crypto'
+import { memoryStorage } from 'multer'
 import { CurrentUser } from '@/common/decorators/current-user.decorator'
 import { Public } from '@/common/decorators/public.decorator'
+import { FileUploadService } from '@/common/storage/file-upload.service'
 import type { AuthenticatedUser } from '@/modules/auth/types/authenticated-user'
 import { MediaService } from './media.service'
 
@@ -26,21 +24,13 @@ const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024
 export class MediaController {
   constructor(
     private readonly mediaService: MediaService,
-    private readonly configService: ConfigService
+    private readonly fileUploadService: FileUploadService
   ) {}
 
   @Post()
   @UseInterceptors(
     FileInterceptor('file', {
-      storage: diskStorage({
-        destination: (req, _file, cb) => {
-          const dir = process.env.MEDIA_LOCAL_DIR ?? 'uploads'
-          cb(null, dir)
-        },
-        filename: (_req, file, cb) => {
-          cb(null, `${randomUUID()}${extname(file.originalname)}`)
-        },
-      }),
+      storage: memoryStorage(),
       limits: { fileSize: MAX_FILE_SIZE_BYTES },
       fileFilter: (_req, file, cb) => {
         if (!ALLOWED_MIME_TYPES.has(file.mimetype)) {
@@ -60,10 +50,16 @@ export class MediaController {
     if (!file) throw new BadRequestException('No file uploaded')
     if (!listingId) throw new BadRequestException('listingId is required')
 
+    const result = await this.fileUploadService.uploadFile(
+      { buffer: file.buffer, originalname: file.originalname, mimetype: file.mimetype },
+      { folder: 'listings' }
+    )
+
     return this.mediaService.addFromUpload({
       listingId,
       requesterId: user.id,
-      filename: file.filename,
+      url: result.url,
+      fileId: result.fileId,
       order: order !== undefined ? Number(order) : undefined,
     })
   }

@@ -100,6 +100,14 @@ export class FileUploadService {
     return { success: true, provider, url: result.secure_url, fileId: result.public_id }
   }
 
+  async deleteFile(fileId: string): Promise<void> {
+    try {
+      await cloudinary.uploader.destroy(fileId)
+    } catch (error) {
+      this.logger.warn(`Failed to delete Cloudinary file "${fileId}": ${this.messageOf(error)}`)
+    }
+  }
+
   private messageOf(error: unknown): string {
     return error instanceof Error ? error.message : String(error)
   }
